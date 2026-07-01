@@ -13,10 +13,16 @@ import java.util.Optional;
 public class TodoRepository {
     List<Todo> todos = new ArrayList<>(Arrays.asList(new Todo("1","work")));
 
+    /*
+        * Get all todos, returns the entire List.
+     */
     public List<Todo> getAllTodos(){
         return todos;
     }
 
+    /*
+        * Get todo by ID, search todo by id, if found return the first find.
+     */
     public Optional<Todo> getTodoById(@PathVariable String id) {
         return todos.stream().filter(todo->todo.getId().equals(id)).findFirst();
 
