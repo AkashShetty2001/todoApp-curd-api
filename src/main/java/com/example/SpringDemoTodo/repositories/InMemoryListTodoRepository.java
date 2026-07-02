@@ -23,7 +23,24 @@ public class InMemoryListTodoRepository implements ITodoRepository {
     @Override
     public Optional<Todo> getTodoById(@PathVariable String id) {
         return todos.stream().filter(todo->todo.getId().equals(id)).findFirst();
+    }
 
+    @Override
+    public Todo createTodo(Todo todo) {
+        todos.add(todo);
+        return todo;
+    }
 
+    @Override
+    public Optional<Todo> updateTodo(String id, Todo todo) {
+        return getTodoById(id).map(existing -> {
+            existing.setContent(todo.getContent());
+            return existing;
+        });
+    }
+
+    @Override
+    public boolean deleteTodo(String id) {
+        return todos.removeIf(todo -> todo.getId().equals(id));
     }
 }

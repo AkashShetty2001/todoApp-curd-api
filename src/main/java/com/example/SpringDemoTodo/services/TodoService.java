@@ -1,13 +1,10 @@
 package com.example.SpringDemoTodo.services;
 
+import com.example.SpringDemoTodo.dtos.TodoDTO;
 import com.example.SpringDemoTodo.models.Todo;
 import com.example.SpringDemoTodo.repositories.ITodoRepository;
-import com.example.SpringDemoTodo.repositories.InMemoryListTodoRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,26 +13,44 @@ import java.util.Optional;
 @AllArgsConstructor
 public class TodoService {
 
-    /*
-       we are trying to inject ITodoRepository implementation class bean.
-     */
     private ITodoRepository iTodoRepository;
-
-  /*
-
-     @Autowired
-    public TodoService(@Qualifier("inMemoryListTodoRepository") ITodoRepository iTodoRepository) {
-        this.iTodoRepository = iTodoRepository;
-    }
-
-   */
 
     public List<Todo> getAllTodos(){
         return iTodoRepository.getAllTodos();
     }
 
-    public Optional<Todo> getTodoById(@PathVariable String id) {
+    public Optional<Todo> getTodoById(String id) {
         return iTodoRepository.getTodoById(id);
+    }
 
+    public Todo createTodo(TodoDTO todoDTO) {
+
+        /*
+         int lastId = 0;
+    for (Todo todo : iTodoRepository.getAllTodos()) {
+        int currentId = Integer.parseInt(todo.getId());
+        if (currentId > lastId) {
+            lastId = currentId;
+        }
+    }
+    Todo newTodo = new Todo(String.valueOf(lastId + 1), todoDTO.getContent());
+    return iTodoRepository.createTodo(newTodo);
+         */
+
+        int lastId = iTodoRepository.getAllTodos().stream()
+                .mapToInt(todo -> Integer.parseInt(todo.getId()))
+                .max()
+                .orElse(0);
+        Todo newTodo = new Todo(String.valueOf(lastId + 1), todoDTO.getContent());
+        return iTodoRepository.createTodo(newTodo);
+    }
+
+    public Optional<Todo> updateTodo(String id, TodoDTO todoDTO) {
+        Todo todo = new Todo(id, todoDTO.getContent());
+        return iTodoRepository.updateTodo(id, todo);
+    }
+
+    public boolean deleteTodo(String id) {
+        return iTodoRepository.deleteTodo(id);
     }
 }
