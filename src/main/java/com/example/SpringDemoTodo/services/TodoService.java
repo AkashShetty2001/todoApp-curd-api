@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@AllArgsConstructor
 public class TodoService {
 
     /*
@@ -20,10 +21,14 @@ public class TodoService {
      */
     private ITodoRepository iTodoRepository;
 
-    @Autowired
+  /*
+
+     @Autowired
     public TodoService(@Qualifier("inMemoryListTodoRepository") ITodoRepository iTodoRepository) {
         this.iTodoRepository = iTodoRepository;
     }
+
+   */
 
     public List<Todo> getAllTodos(){
         return iTodoRepository.getAllTodos();

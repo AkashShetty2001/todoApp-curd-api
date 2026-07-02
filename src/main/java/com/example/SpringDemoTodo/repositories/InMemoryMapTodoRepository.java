@@ -2,16 +2,17 @@ package com.example.SpringDemoTodo.repositories;
 
 import com.example.SpringDemoTodo.models.Todo;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
 @Repository
-@Primary
+@Profile("prod")
 public class InMemoryMapTodoRepository implements ITodoRepository {
 
     Map<String, Todo> todos = new HashMap<>(
-            Map.of("2", new Todo("1", "Office Work"))
+            Map.of("2", new Todo("1", "Map"))
     );
 
     @Override
