@@ -1,35 +1,55 @@
+// Gradle build configuration for SpringDemoTodo application
+
+// Apply necessary plugins for Java Spring Boot project
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.1.0'
-	id 'io.spring.dependency-management' version '1.1.7'
+	id 'java'                                           // Java language support
+	id 'org.springframework.boot' version '4.1.0'      // Spring Boot framework plugin
+	id 'io.spring.dependency-management' version '1.1.7' // Automatic dependency version management
 }
 
+// Project metadata
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
+// Java version configuration
 java {
 	toolchain {
+		// Target Java 21 LTS for compilation and runtime
 		languageVersion = JavaLanguageVersion.of(21)
 	}
 }
 
+// Maven Central Repository for dependency resolution
 repositories {
 	mavenCentral()
 }
 
+// Project dependencies
 dependencies {
+	// Spring Boot Web MVC starter (includes Tomcat, Spring Web)
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+
+	// Environment variable management from .env files
 	implementation 'io.github.cdimascio:dotenv-java:3.2.0'
+
+	// Lombok - Reduces boilerplate code for getters, setters, constructors, etc.
 	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
+
+	// Spring Boot DevTools - Enables hot reload during development
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// Spring Boot configuration processor for @ConfigurationProperties
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+	// Testing dependencies
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testCompileOnly 'org.projectlombok:lombok'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// Configure test task to use JUnit Platform for running tests
 tasks.named('test') {
 	useJUnitPlatform()
 }
