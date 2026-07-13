@@ -1,0 +1,149 @@
+TODO API REQUEST-TO-RESPONSE FLOW
+=================================
+
+This note explains what happens in THIS project when a client (for example,
+a React app, Postman, or curl) calls a Todo API endpoint.
+
+Big picture
+-----------
+
+Client
+  -> embedded Tomcat server
+  -> Spring MVC routing (DispatcherServlet)
+  -> TodoController
+  -> TodoService
+  -> ITodoRepository implementation
+  -> TodoService
+  -> TodoController
+  -> Spring converts the returned Java object to JSON
+  -> HTTP response sent to the client
+
+The layers have separate jobs:
+
+* Controller: HTTP concerns -- URL, request method, path variables, request body.
+* Service: application/business logic -- for example, generating a new Todo ID.
+* Repository: reading and changing stored data.
+* Model (Todo): the application's Todo object, containing id and content.
+* DTO (TodoDTO): the input shape accepted for create/update requests. It accepts
+  content only, so the client does not choose the ID.
+
+1. Application startup
+----------------------
+
+SpringDemoTodoApplication.main() loads values from .env, then calls
+SpringApplication.run(...). Spring Boot starts an embedded Tomcat server.
+
+@SpringBootApplication also makes Spring scan this package and its subpackages.
+During scanning, Spring creates and connects the classes marked with annotations:
+
+* @RestController: TodoController
+* @Service: TodoService
+* @Repository: one repository implementation
+
+Which repository is created depends on the active Spring profile in
+src/main/resources/application.yml:
+
+* dev (the default): InMemoryListTodoRepository, backed by an ArrayList
+* prod: InMemoryMapTodoRepository, backed by a HashMap
+
+Both implement ITodoRepository. The service depends on that interface, not on a
+specific storage class. This makes it possible to replace the in-memory storage
+with a database repository later without changing the controller/service API.
+
+Important: both current repositories keep data only in memory. All todos reset
+when the application restarts.
+
+2. Example: create a todo
+-------------------------
+
+Request:
+
+  POST http://localhost:8080/api/v1/todos
+  Content-Type: application/json
+
+  { "content": "Learn Spring routing" }
+
+Step-by-step:
+
+1. Tomcat receives the HTTP request on port 8080.
+
+2. Spring MVC's DispatcherServlet is the front door inside Spring. It examines
+   the HTTP method (POST) and path (/api/v1/todos).
+
+3. It finds this controller method in TodoController:
+
+     @PostMapping
+     public Todo createTodo(@RequestBody TodoDTO todoDTO)
+
+   The controller's @RequestMapping("api/v1/todos") supplies the shared base
+   path, and @PostMapping supplies the POST route.
+
+4. @RequestBody tells Spring to read the JSON body and use Jackson to turn it
+   into a TodoDTO object. The value becomes todoDTO.getContent().
+
+5. The controller delegates: todoService.createTodo(todoDTO).
+   The controller does not decide IDs or manipulate storage directly.
+
+6. TodoService performs the current business logic:
+
+   a. Gets all existing todos from ITodoRepository.
+   b. Finds the highest numeric ID.
+   c. Creates a Todo with the next ID and the DTO's content.
+   d. Calls iTodoRepository.createTodo(newTodo).
+
+7. The active repository stores the Todo in its ArrayList (dev) or HashMap
+   (prod), then returns that Todo.
+
+8. The same Todo travels back through the service and controller. Because this
+   is a @RestController, Spring treats the return value as the response body.
+
+9. Jackson serializes the Todo to JSON, approximately:
+
+     { "id": "2", "content": "Learn Spring routing" }
+
+10. Spring sends the JSON HTTP response (normally status 200 with this current
+    method signature) back through Tomcat to the client.
+
+3. How the other routes are selected
+------------------------------------
+
+Base path for all routes: /api/v1/todos
+
+* GET    /all   -> TodoController.getAllTodos() -> service -> repository
+* GET    /{id}  -> @PathVariable String id -> service -> repository
+* POST   /      -> @RequestBody TodoDTO -> service creates -> repository saves
+* PUT    /{id}  -> path ID + @RequestBody TodoDTO -> service updates -> repository
+* DELETE /{id}  -> path ID -> service deletes -> repository
+
+For GET/PUT/DELETE, @PathVariable extracts the ID from the URL. For example,
+GET /api/v1/todos/1 passes the String "1" to getTodoById.
+
+4. Cross-origin requests (CORS)
+-------------------------------
+
+TodoController has @CrossOrigin(origins = "*", ...). This lets browser-based
+frontends hosted at another origin call these GET, POST, PUT, and DELETE routes.
+Without suitable CORS headers, a browser might block a frontend request before
+the frontend can read its response. Postman and curl are not subject to browser
+CORS enforcement.
+
+5. Current response behavior to know about
+------------------------------------------
+
+The controller returns plain Java values rather than ResponseEntity objects.
+That keeps the example simple, but it means the code does not explicitly choose
+HTTP status codes. For example, a missing Todo is returned as Optional.empty()
+rather than an explicit 404 Not Found response. A typical next improvement is
+to return ResponseEntity<T> and use 201 Created for POST, 204 No Content for a
+successful delete, and 404 Not Found when an ID does not exist.
+
+Useful source files
+-------------------
+
+* controllers/TodoController.java: route definitions and HTTP input binding
+* services/TodoService.java: Todo use-case logic and ID generation
+* repositories/ITodoRepository.java: storage contract
+* repositories/InMemoryListTodoRepository.java: active default dev storage
+* repositories/InMemoryMapTodoRepository.java: prod-profile storage
+* dtos/TodoDTO.java and models/Todo.java: request and domain data shapes
+
